@@ -1,0 +1,82 @@
+Public Sub lsEnviarWhats()
+    Dim lUltimaLinha As Long
+    Dim lMensagem As String
+    Dim lLinkWhats As String
+    Dim quantidadeEnviar As Long
+    Dim quantidadeEnviada As Long
+    Dim tempoInicial As Double
+    Dim tempoFinal As Double
+    Dim tempoDecorrido As Double
+    Dim minutos As Integer
+    Dim segundos As Integer
+
+    'Application.Wait Now + TimeValue("00:00:05")
+
+    lUltimaLinha = ActiveSheet.Cells(Rows.Count, 2).End(xlUp).Row
+
+    ' Verifica a quantidade de mensagens a enviar
+    quantidadeEnviar = 0
+    quantidadeEnviada = 0
+    For i = 2 To lUltimaLinha
+        If ActiveSheet.Cells(i, 10).Value = "Enviar" Then
+            quantidadeEnviar = quantidadeEnviar + 1
+        End If
+        If ActiveSheet.Cells(i, 13).Value = "Mensagem Enviada" Then
+            quantidadeEnviada = quantidadeEnviada + 1
+        End If
+    Next i
+
+    quantidadeEnviar = quantidadeEnviar - quantidadeEnviada ' Subtrai a quantidade de mensagens já enviadas
+
+    ' Exibe a caixa de mensagem com o resumo das mensagens a serem enviadas
+    If quantidadeEnviar > 0 Then
+        Dim mensagemConfirmacao As String
+        mensagemConfirmacao = "Deseja enviar as mensagens?" & vbNewLine & vbNewLine
+        mensagemConfirmacao = mensagemConfirmacao & "Quantidade de mensagens: " & quantidadeEnviar
+        If MsgBox(mensagemConfirmacao, vbQuestion + vbYesNo, "Confirmação") = vbYes Then
+            ' Faz o loop entre as linhas da tabela a partir da linha 2
+            tempoInicial = Timer ' Marca o tempo inicial
+
+            For i = 2 To lUltimaLinha
+                If ActiveSheet.Cells(i, 10).Value = "Enviar" And ActiveSheet.Cells(i, 13).Value <> "Mensagem Enviada" Then ' Verifica se a célula da coluna J contém "Enviar" e se a coluna M não contém "Mensagem Enviada"
+                    lMensagem = ActiveSheet.Cells(i, 12).Value ' Obtém a mensagem da coluna L
+                    lLinkWhats = ActiveSheet.Cells(i, 11).Value ' Obtém o link do WhatsApp da coluna K
+
+                    ' Abre o Whatsapp com o link correspondente
+                    Shell "C:\Program Files\Google\Chrome\Application\chrome.exe" & " " & lLinkWhats
+
+                    Application.Wait Now + TimeValue("00:00:10") ' Tempo de espera para o programa do WhatsApp abrir completamente
+
+                    SendKeys lMensagem
+                    SendKeys "~"
+
+                    Application.Wait Now + TimeValue("00:00:05")
+                    SendKeys "~"
+                    Application.Wait Now + TimeValue("00:00:03")
+
+                    ' Pressionar a tecla TAB 18 vezes
+                    For j = 1 To 17
+                        SendKeys "{TAB}"
+                    Next j
+
+                    ActiveSheet.Cells(i, 14).Value = Now
+                    ActiveSheet.Cells(i, 13).Value = "Mensagem Enviada" ' Insere "Mensagem Enviada" na coluna M
+
+                    quantidadeEnviada = quantidadeEnviada + 1 ' Incrementa o contador de mensagens enviadas
+
+                    Application.Wait Now + TimeValue("00:00:07") ' Tempo de espera após o envio de cada mensagem
+                End If
+            Next i
+
+            tempoFinal = Timer ' Marca o tempo final
+            tempoDecorrido = tempoFinal - tempoInicial ' Calcula o tempo decorrido
+
+            minutos = Int(tempoDecorrido / 60) ' Calcula os minutos
+            segundos = tempoDecorrido Mod 60 ' Calcula os segundos
+
+            MsgBox "O envio foi concluído! " & quantidadeEnviada & " mensagens foram enviadas." & vbNewLine & vbNewLine & "Tempo decorrido: " & minutos & " minutos e " & segundos & " segundos."
+        End If
+    Else
+        MsgBox "Não há mensagens para enviar."
+    End If
+End Sub
